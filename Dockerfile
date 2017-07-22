@@ -31,7 +31,7 @@ RUN mkdir -p /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/bin
 RUN mkdir -p /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/lib64/modules/$(ls /usr/lib64/modules)/kernel/drivers/video/nvidia
 RUN find /build        -maxdepth 1 -name "nvidia-*" -executable -exec cp {} /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/bin \; 
 RUN find /build        -maxdepth 1 -name "*.so.*"               -exec cp {} /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/lib64 \; 
-RUN find /build/kernel -maxdepth 1 -name "*.ko"                 -exec cp {} /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/lib64/modules/$(ls /usr/lib64/modules)/kernel/drivers/video/ \; 
+RUN find /build/kernel -maxdepth 1 -name "*.ko"                 -exec cp {} /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/lib64/modules/$(ls /usr/lib64/modules)/kernel/drivers/video/nvidia \; 
 
 FROM alpine 
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
