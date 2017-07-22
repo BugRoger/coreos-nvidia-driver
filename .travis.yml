@@ -3,8 +3,8 @@ sudo: required
 
 env:
   gloabl:
-    NVIDIA_DRIVER_VERSION=381.22
-    IMAGE=coreos-nvidia-driver
+  - NVIDIA_DRIVER_VERSION=381.22
+  - IMAGE=coreos-nvidia-driver
   matrix:
   - COREOS_TRACK=stable 
   - COREOS_TRACK=beta
