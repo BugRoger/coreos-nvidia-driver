@@ -5,7 +5,7 @@ FROM bugroger/coreos-developer:${COREOS_VERSION} as BUILD
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
 
 ARG COREOS_VERSION
-ARG DRIVER_VERSION
+ARG NVIDIA_DRIVER_VERSION
 
 RUN emerge-gitclone
 RUN . /usr/share/coreos/release && \
