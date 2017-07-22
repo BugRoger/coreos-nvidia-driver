@@ -14,7 +14,7 @@ RUN emerge -gKv coreos-sources
 RUN cp /usr/lib64/modules/$(ls /usr/lib64/modules)/build/.config /usr/src/linux/
 RUN make -C /usr/src/linux modules_prepare
 
-ENV DRIVER_ARCHIVE=NVIDIA-Linux-x86_64-${DRIVER_VERSION}
+ENV DRIVER_ARCHIVE=NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}
 ENV SITE=us.download.nvidia.com/XFree86/Linux-x86_64
 RUN curl -v -L http://${SITE}/${NVIDIA_DRIVER_VERSION}/${DRIVER_ARCHIVE}.run -o ${DRIVER_ARCHIVE}.run
 RUN chmod +x ${DRIVER_ARCHIVE}.run && ./${DRIVER_ARCHIVE}.run -x && mv ${DRIVER_ARCHIVE} /build
