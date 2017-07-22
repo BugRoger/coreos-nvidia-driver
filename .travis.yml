@@ -2,13 +2,13 @@ dist: trusty
 sudo: required
 
 env:
-  gloabl:
-  - NVIDIA_DRIVER_VERSION=381.22
-  - IMAGE=coreos-nvidia-driver
+  global:
+    - NVIDIA_DRIVER_VERSION=381.22
+    - IMAGE=coreos-nvidia-driver
   matrix:
-  - COREOS_TRACK=stable 
-  - COREOS_TRACK=beta
-  - COREOS_TRACK=alpha
+    - COREOS_TRACK=stable 
+    - COREOS_TRACK=beta
+    - COREOS_TRACK=alpha
 
 before_script:
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
