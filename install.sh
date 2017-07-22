@@ -28,6 +28,8 @@ EOF
 
 cat <<EOF > /etc/systemd/system/nvidia-persistenced.service
 [Unit]
+After=nvidia.service
+Requires=nvidia.service
 Description=NVIDIA Persistence Daemon
 
 [Service]
@@ -41,11 +43,15 @@ EOF
 
 cat <<EOF > /etc/systemd/system/nvidia.service
 [Unit]
+After=usr-lib64.mount
+Requires=usr-lib64.mount
 Description=NVIDIA Load
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+ExecStart=/usr/sbin/ldconfig
+ExecStart=/usr/sbin/depmod -a
 ExecStart=/opt/bin/nvidia-modprobe -u -m -c 0
 ExecStart=/opt/bin/nvidia-smi
 
@@ -56,16 +62,13 @@ EOF
 cat <<EOF > /etc/udev/rules.d/01-nvidia.rules
 SUBSYSTEM=="pci", ATTRS{vendor}=="0x10de", DRIVERS=="nvidia", TAG+="seat", TAG+="master-of-seat"
 EOF
+udevadm control --reload-rules
 
 useradd -c "NVIDIA Persistence Daemon" --shell /sbin/nologin --home-dir / nvidia-persistenced
 
 systemctl daemon-reload
 systemctl enable usr-lib64.mount
 systemctl start usr-lib64.mount
-
-ldconfig
-depmod -a
-udevadm control --reload-rules
 
 systemctl enable nvidia
 systemctl start nvidia
