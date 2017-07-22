@@ -21,7 +21,7 @@ RUN curl -v -L http://${SITE}/${NVIDIA_DRIVER_VERSION}/${DRIVER_ARCHIVE}.run -o 
 RUN chmod +x ${DRIVER_ARCHIVE}.run 
 RUN ./${DRIVER_ARCHIVE}.run -x 
 RUN mv ${DRIVER_ARCHIVE} /build
-RUN mkdir /dest && build/nvidia-installer -s -n --kernel-source-path=/usr/src/linux \
+RUN mkdir /dest && /build/nvidia-installer -s -n --kernel-source-path=/usr/src/linux \
   --no-check-for-alternate-installs --no-kernel-module-source --no-opengl-files --no-distro-scripts \
   --kernel-install-path=/dest --log-file-name=${PWD}/nvidia-installer.log || \
   echo "nspawn fails as expected. Because kernel modules can't install in the container"
