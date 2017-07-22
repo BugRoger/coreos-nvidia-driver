@@ -21,10 +21,10 @@ before_script:
   - export $(cat version.txt | xargs)
 
 script:
-  - docker build --build-arg NVIDIA_DRIVER_VERSION=$(NVIDIA_DRIVER_VERSION) -t $(IMAGE):${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION} --rm .
+  - docker build --build-arg NVIDIA_DRIVER_VERSION=${NVIDIA_DRIVER_VERSION} -t $(IMAGE):${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION} --rm .
 
 after_success:
-  - docker push ${DOCKER_USERNAME}/$(IMAGE):${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION}
+  - docker push ${DOCKER_USERNAME}/${IMAGE}:${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION}
 
 notifications:
   slack: 
