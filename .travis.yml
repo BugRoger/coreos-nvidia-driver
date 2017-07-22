@@ -25,6 +25,7 @@ script:
 
 after_success:
   - docker push ${DOCKER_USERNAME}/${IMAGE}:${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION}
+  - docker push ${DOCKER_USERNAME}/${IMAGE}:${COREOS_TRACK}-${NVIDIA_DRIVER_VERSION}
 
 notifications:
   slack: 
