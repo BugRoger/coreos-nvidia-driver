@@ -1,5 +1,5 @@
-ARG COREOS_VERSION=1409.7.0
-ARG NVIDIA_DRIVER_VERSION=381.22
+ARG COREOS_VERSION=1465.8.0
+ARG NVIDIA_DRIVER_VERSION=384.90
 
 FROM bugroger/coreos-developer:${COREOS_VERSION} as BUILD
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
