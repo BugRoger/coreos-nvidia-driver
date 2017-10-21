@@ -10,7 +10,7 @@ ARG NVIDIA_DRIVER_VERSION
 RUN emerge-gitclone
 RUN . /usr/share/coreos/release && \
   git -C /var/lib/portage/coreos-overlay checkout build-${COREOS_RELEASE_VERSION%%.*}
-RUN source /etc/os-release && [ "${VERSION_ID}" == "1520.6.0" ] && export PORTAGE_BINHOST=$'http://builds.developer.core-os.net/boards/amd64-usr/1520.6.0/pkgs/\nhttp://builds.developer.core-os.net/boards/amd64-usr/1520.6.0/toolchain/'
+ENV PORTAGE_BINHOST=$'http://builds.developer.core-os.net/boards/amd64-usr/1520.6.0/pkgs/\nhttp://builds.developer.core-os.net/boards/amd64-usr/1520.6.0/toolchain/'
 RUN emerge -gKv coreos-sources > /dev/null
 RUN cp /usr/lib64/modules/$(ls /usr/lib64/modules)/build/.config /usr/src/linux/
 RUN make -C /usr/src/linux modules_prepare
