@@ -15,7 +15,7 @@ before_script:
   - sudo apt-key fingerprint 0EBFCD88
   - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
   - sudo apt-get update
-  - sudo apt-get install docker-ce=17.06.0~ce-0~ubuntu
+  - sudo apt-get install docker-ce=17.12.0~ce-0~ubuntu
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - curl https://${COREOS_TRACK}.release.core-os.net/amd64-usr/current/version.txt -o version.txt
   - export $(cat version.txt | xargs)
