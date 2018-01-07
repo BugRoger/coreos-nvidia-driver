@@ -3,7 +3,7 @@ sudo: required
 
 env:
   global:
-    - NVIDIA_DRIVER_VERSION=384.90
+    - NVIDIA_DRIVER_VERSION=384.111
     - IMAGE=coreos-nvidia-driver
   matrix:
     - COREOS_TRACK=stable 
