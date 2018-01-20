@@ -2,11 +2,9 @@ dist: trusty
 sudo: required
 
 env:
-  - NVIDIA_DRIVER_VERSION=384.111
-  - NVIDIA_DRIVER_VERSION=387.34
-  - NVIDIA_DRIVER_VERSION=390.12
   global:
     - IMAGE=coreos-nvidia-driver
+    - NVIDIA_DRIVER_VERSION=384.111
   matrix:
     - COREOS_TRACK=stable 
     - COREOS_TRACK=beta
