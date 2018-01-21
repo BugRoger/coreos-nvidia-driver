@@ -69,4 +69,14 @@ RUN find /build/kernel -maxdepth 1 -name "*.ko"                 -exec cp {} /opt
 FROM alpine 
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
 
+ARG COREOS_VERSION
+ARG NVIDIA_DRIVER_VERSION
+
+ENV COREOS_VERSION $COREOS_VERSION
+ENV DRIVER_VERSION $NVIDIA_DRIVER_VERSION
+
 COPY --from=BUILD /opt/nvidia /opt/nvidia
+COPY run.sh /
+COPY install.sh /
+
+ENTRYPOINT ["/run.sh"]
