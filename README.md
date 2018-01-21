@@ -96,43 +96,70 @@ and what was baked into the container.
 A spec using this installer looks like this:
 
 ```
-apiVersion: apps/v1beta1 
-kind: Deployment
-
+apiVersion: v1
+kind: Pod
 metadata:
   name: nvidia-settings 
 spec:
-  replicas: 1 
-  strategy: 
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: nvidia-settings
-    spec:
-      containers:
-        - name: nvidia-settings 
-          securityContext:
-            privileged: true
-          image: bugroger/x11:381.22
-          imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /usr/local/nvidia
-              name: nvidia 
-            - mountPath: /usr/local/cuda
-              name: cuda 
-      volumes:
-        - name: nvidia
-          hostPath:
-            path: /opt/nvidia/current
-        - name: cuda
-          hostPath:
-            path: /opt/cuda/current
+  containers:
+    - name: nvidia-settings 
+      image: bugroger/x11:381.22
+      volumeMounts:
+        - mountPath: /usr/local/nvidia
+          name: nvidia 
+        - mountPath: /usr/local/cuda
+          name: cuda 
+  volumes:
+    - name: nvidia
+      hostPath:
+        path: /opt/nvidia/current
+    - name: cuda
+      hostPath:
+        path: /opt/cuda/current
 ```
 
 Note the `hostPath` value pointing to `current`. This makes the spec
 independant of a specific driver version. Though if required, this can also be
 used to pin to a specific version.
+
+If you are into Kubernetes Alpha features, this can be made even less invasive
+using `PodPresets`:
+
+```
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nvidia-settings 
+  labels:
+    sharedLibs: nvidia
+spec:
+  containers:
+    - name: nvidia-settings 
+      image: bugroger/x11:381.22
+---
+apiVersion: settings.k8s.io/v1alpha1
+kind: PodPreset
+metadata:
+  name: nvidia-shared-libs
+spec:
+  selector:
+    matchLabels:
+      sharedLibs: nvidia
+  volumeMounts:
+    - mountPath: /usr/local/nvidia
+      name: nvidia 
+    - mountPath: /usr/local/cuda
+      name: cuda 
+  volumes:
+    - name: nvidia
+      hostPath:
+        path: /opt/nvidia/current
+    - name: cuda
+      hostPath:
+        path: /opt/cuda/current
+```
+
 
 ## Docker
 
