@@ -11,15 +11,23 @@ env:
     - COREOS_TRACK=alpha
 
 before_script:
-  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - curl https://${COREOS_TRACK}.release.core-os.net/amd64-usr/current/version.txt -o version.txt
+  - cat version.txt
   - export $(cat version.txt | xargs)
-  - curl -s https://hub.docker.com/v2/repositories/${DOCKER_USERNAME}/${IMAGE}/tags/?page_size=10000 | jq -e "[.results | .[] | .name == \"${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION}\"] | any | not" || travis_terminate 0
+  - curl -s https://hub.docker.com/v2/repositories/${DOCKER_USERNAME}/${IMAGE}/tags/?page_size=10000 | \
+    jq -e "[.results | .[] | .name == \"${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION}\"] | any | not" || \
+    travis_terminate 0
 
 script:
-  - docker build --build-arg NVIDIA_DRIVER_VERSION=${NVIDIA_DRIVER_VERSION} --build-arg COREOS_VERSION=${COREOS_VERSION} -t ${DOCKER_USERNAME}/${IMAGE}:${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION} --rm .
+  - docker build \
+    --build-arg NVIDIA_DRIVER_VERSION=${NVIDIA_DRIVER_VERSION} \
+    --build-arg COREOS_VERSION=${COREOS_VERSION} \
+    --tag ${DOCKER_USERNAME}/${IMAGE}:${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION} \
+    --tag ${DOCKER_USERNAME}/${IMAGE}:${COREOS_TRACK}-${NVIDIA_DRIVER_VERSION} \
+    .
 
 after_success:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - docker push ${DOCKER_USERNAME}/${IMAGE}:${COREOS_VERSION}-${NVIDIA_DRIVER_VERSION}
   - docker push ${DOCKER_USERNAME}/${IMAGE}:${COREOS_TRACK}-${NVIDIA_DRIVER_VERSION}
 
@@ -27,3 +35,6 @@ notifications:
   slack: 
     rooms:
       - d26a:3WFB88N8V6onXGdA4fCwOvd4
+    on_success: change 
+    on_failure: always
+

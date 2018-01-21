@@ -64,10 +64,9 @@ RUN find /build        -maxdepth 1 -name "*.so.*"               -exec cp {} /opt
 RUN find /build/kernel -maxdepth 1 -name "*.ko"                 -exec cp {} /opt/nvidia/${NVIDIA_DRIVER_VERSION}/${COREOS_VERSION}/lib64/modules/$(ls /usr/lib64/modules)/kernel/drivers/video/nvidia \; 
 
 
-# Create a clean transport image containing only what we want
+# Create a clean transport image containing only the driver
 
-FROM scratch
+FROM alpine 
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
 
 COPY --from=BUILD /opt/nvidia /opt/nvidia
-
