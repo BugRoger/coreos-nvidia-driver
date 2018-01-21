@@ -2,8 +2,8 @@
 
 set -ev
 
-mkdir -p /opt/nvidia/.work
-mkdir -p /opt/bin
+mkdir -p /opt/nvidia/.work || true
+mkdir -p /opt/bin || true
 rm -rf /opt/nvidia/current || true
 ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/bin/* /opt/bin
 ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION /opt/nvidia/current
