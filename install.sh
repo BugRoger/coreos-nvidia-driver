@@ -1,13 +1,12 @@
 #!/bin/sh
 
-set -x
+set -ev
 
-mkdir /opt/nvidia/.work
-rm /opt/nvidia/current
+mkdir -p /opt/nvidia/.work
+mkdir -p /opt/bin
 ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/bin/* /opt/bin
-ln -fs $DRIVER_VERSION/$COREOS_VERSION /opt/nvidia/current
-ln -fs libnvidia-ml.so.$NVIDIA_DRIVER_VERSION /opt/nvidia/$NVIDIA_DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so
-rm /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libEGL.so.$DRIVER_VERSION
+ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION /opt/nvidia/current
+ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so.$DRIVER_VERSION /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so
 chmod u+s /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/bin/nvidia-modprobe
 
 cat <<EOF > /etc/systemd/system/nvidia-update.service
@@ -84,7 +83,7 @@ SUBSYSTEM=="pci", ATTRS{vendor}=="0x10de", DRIVERS=="nvidia", TAG+="seat", TAG+=
 EOF
 udevadm control --reload-rules
 
-useradd -c "NVIDIA Persistence Daemon" --shell /sbin/nologin --home-dir / nvidia-persistenced
+useradd -c "NVIDIA Persistence Daemon" --shell /sbin/nologin --home-dir / nvidia-persistenced || true
 
 systemctl daemon-reload
 systemctl enable nvidia-update
