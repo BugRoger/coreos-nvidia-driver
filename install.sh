@@ -4,6 +4,7 @@ set -ev
 
 mkdir -p /opt/nvidia/.work
 mkdir -p /opt/bin
+rm -rf /opt/nvidia/current || true
 ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/bin/* /opt/bin
 ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION /opt/nvidia/current
 ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so.$DRIVER_VERSION /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so
@@ -81,8 +82,8 @@ EOF
 cat <<EOF > /etc/udev/rules.d/01-nvidia.rules
 SUBSYSTEM=="pci", ATTRS{vendor}=="0x10de", DRIVERS=="nvidia", TAG+="seat", TAG+="master-of-seat"
 EOF
-udevadm control --reload-rules
 
+udevadm control --reload-rules
 useradd -c "NVIDIA Persistence Daemon" --shell /sbin/nologin --home-dir / nvidia-persistenced || true
 
 systemctl daemon-reload
