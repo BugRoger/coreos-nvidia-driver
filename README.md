@@ -31,7 +31,7 @@ driver. Tadaaaa.
 Find the image on Docker Hub: https://hub.docker.com/r/bugroger/coreos-nvidia-driver
 
 ```
-docker run -v /:/rootfs --privileged bugroger/coreos-nvidia-installer:1576.5.0-384.111
+docker run -v /:/rootfs --privileged bugroger/coreos-nvidia-driver:1576.5.0-384.111
 ```
 
 This will install the Nvidia driver to `/opt/nvidia/384.111/1576.5.0`. Additionally,
