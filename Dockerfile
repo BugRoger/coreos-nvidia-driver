@@ -1,6 +1,6 @@
 ARG COREOS_VERSION=1632.2.0
 ARG NVIDIA_DRIVER_VERSION=390.25
-ARG NVIDIA_PRODUCT_TYPE=XFree86
+ARG NVIDIA_PRODUCT_TYPE=XFree86/Linux-x86_64
 
 FROM bugroger/coreos-developer:${COREOS_VERSION} as BUILD
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
@@ -9,7 +9,7 @@ ARG COREOS_VERSION
 ARG NVIDIA_DRIVER_VERSION
 ARG NVIDIA_PRODUCT_TYPE
 ENV DRIVER_ARCHIVE=NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}
-ENV SITE=us.download.nvidia.com/${NVIDIA_PRODUCT_TYPE}/Linux-x86_64
+ENV SITE=us.download.nvidia.com/${NVIDIA_PRODUCT_TYPE}
 
 # We need to prepare the Container Linux Developer image. As described at 
 # https://coreos.com/os/docs/latest/kernel-modules.html we need to get source 
