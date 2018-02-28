@@ -21,8 +21,8 @@ EnvironmentFile=/etc/os-release
 TimeoutStartSec=0
 Type=oneshot
 RemainAfterExit=yes
-ExecStartPre=/usr/bin/docker pull bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION
-ExecStart=/usr/bin/docker run -v /:/rootfs --privileged bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION
+ExecStartPre=/usr/bin/docker pull bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION-$NVIDIA_PRODUCT_TYPE
+ExecStart=/usr/bin/docker run -v /:/rootfs --privileged bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION-$NVIDIA_PRODUCT_TYPE
 
 [Install]
 WantedBy=multi-user.target

@@ -1,6 +1,7 @@
 ARG COREOS_VERSION=1632.2.0
 ARG NVIDIA_DRIVER_VERSION=390.25
-ARG NVIDIA_PRODUCT_TYPE=XFree86/Linux-x86_64
+ARG NVIDIA_PRODUCT_TYPE=geforce
+ARG NVIDIA_SITE=us.download.nvidia.com/XFree86/Linux-x86_64
 
 FROM bugroger/coreos-developer:${COREOS_VERSION} as BUILD
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
@@ -8,8 +9,8 @@ LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
 ARG COREOS_VERSION
 ARG NVIDIA_DRIVER_VERSION
 ARG NVIDIA_PRODUCT_TYPE
+ARG NVIDIA_SITE
 ENV DRIVER_ARCHIVE=NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}
-ENV SITE=us.download.nvidia.com/${NVIDIA_PRODUCT_TYPE}
 
 # We need to prepare the Container Linux Developer image. As described at 
 # https://coreos.com/os/docs/latest/kernel-modules.html we need to get source 
@@ -28,7 +29,7 @@ RUN make -C /usr/src/linux modules_prepare
 # Download, extract and move the NVIDIA driver (it won't build in /tmp)
 
 WORKDIR /tmp
-RUN curl -v -L http://${SITE}/${NVIDIA_DRIVER_VERSION}/${DRIVER_ARCHIVE}.run -o ${DRIVER_ARCHIVE}.run
+RUN curl -v -L http://${NVIDIA_SITE}/${NVIDIA_DRIVER_VERSION}/${DRIVER_ARCHIVE}.run -o ${DRIVER_ARCHIVE}.run
 RUN chmod +x ${DRIVER_ARCHIVE}.run 
 RUN ./${DRIVER_ARCHIVE}.run -x 
 RUN mv ${DRIVER_ARCHIVE} /build
@@ -77,6 +78,7 @@ ARG NVIDIA_PRODUCT_TYPE
 
 ENV COREOS_VERSION $COREOS_VERSION
 ENV DRIVER_VERSION $NVIDIA_DRIVER_VERSION
+ENV NVIDIA_PRODUCT_TYPE $NVIDIA_PRODUCT_TYPE
 
 COPY --from=BUILD /opt/nvidia /opt/nvidia
 COPY run.sh /
