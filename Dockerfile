@@ -29,6 +29,7 @@ RUN make -C /usr/src/linux modules_prepare
 # Download, extract and move the NVIDIA driver (it won't build in /tmp)
 
 WORKDIR /tmp
+RUN echo "curl -v -L http://${NVIDIA_SITE}/${NVIDIA_DRIVER_VERSION}/${DRIVER_ARCHIVE}.run -o ${DRIVER_ARCHIVE}.run"
 RUN curl -v -L http://${NVIDIA_SITE}/${NVIDIA_DRIVER_VERSION}/${DRIVER_ARCHIVE}.run -o ${DRIVER_ARCHIVE}.run
 RUN chmod +x ${DRIVER_ARCHIVE}.run 
 RUN ./${DRIVER_ARCHIVE}.run -x 
