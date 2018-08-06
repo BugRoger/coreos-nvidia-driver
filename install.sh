@@ -23,11 +23,11 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=/usr/bin/docker pull bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION-$NVIDIA_PRODUCT_TYPE
 ExecStart=/usr/bin/docker run -v /:/rootfs --privileged bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION-$NVIDIA_PRODUCT_TYPE
-ExecStartPost=systemctl daemon-reload
-ExecStartPost=systemctl enable nvidia-update
-ExecStartPost=systemctl enable usr-lib64.mount
-ExecStartPost=systemctl enable nvidia
-ExecStartPost=systemctl enable nvidia-persistenced
+ExecStartPost=/usr/bin/systemctl daemon-reload
+ExecStartPost=/usr/bin/systemctl enable nvidia-update
+ExecStartPost=/usr/bin/systemctl enable usr-lib64.mount
+ExecStartPost=/usr/bin/systemctl enable nvidia
+ExecStartPost=/usr/bin/systemctl enable nvidia-persistenced
 [Install]
 WantedBy=multi-user.target
 EOF
