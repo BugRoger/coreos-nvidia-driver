@@ -9,7 +9,7 @@ env:
     - COREOS_TRACK=beta   NVIDIA_DRIVER_VERSION=390.77 NVIDIA_PRODUCT_TYPE=geforce NVIDIA_SITE=us.download.nvidia.com/XFree86/Linux-x86_64
     - COREOS_TRACK=alpha  NVIDIA_DRIVER_VERSION=390.77 NVIDIA_PRODUCT_TYPE=geforce NVIDIA_SITE=us.download.nvidia.com/XFree86/Linux-x86_64
     - COREOS_TRACK=stable NVIDIA_DRIVER_VERSION=396.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
-    - COREOS_TRACK=beta   NVIDIA_DRIVER_VERSION=390.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
+    - COREOS_TRACK=beta   NVIDIA_DRIVER_VERSION=396.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
     - COREOS_TRACK=alpha  NVIDIA_DRIVER_VERSION=396.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
 
 before_script:
