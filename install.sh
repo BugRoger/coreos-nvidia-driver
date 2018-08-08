@@ -4,18 +4,27 @@ set -o errexit
 set -o pipefail
 set -u
 
-set -x
-ROOT_OS_RELEASE="${ROOT_OS_RELEASE:-/root/etc/os-release}"
-ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/root}"
-NVIDIA_DRIVER_VERSION="${NVIDIA_DRIVER_VERSION:-396.26}"
-NVIDIA_DRIVER_COREOS_VERSION=${NVIDIA_DRIVER_COREOS_VERSION:-1800.5.0}
-NVIDIA_INSTALL_DIR_HOST="/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
-NVIDIA_INSTALL_DIR_CONTAINER="/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
-NVIDIA_PRODUCT_TYPE="${NVIDIA_PRODUCT_TYPE:-geforce}"
-
 RETCODE_SUCCESS=0
 RETCODE_ERROR=1
 RETRY_COUNT=${RETRY_COUNT:-5}
+
+set -x
+ROOT_OS_RELEASE="${ROOT_OS_RELEASE:-/root/etc/os-release}"
+ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/root}"
+
+NVIDIA_DRIVER_VERSION="${NVIDIA_DRIVER_VERSION:-396.26}"
+NVIDIA_DRIVER_COREOS_VERSION=${NVIDIA_DRIVER_COREOS_VERSION:-1800.5.0}
+NVIDIA_PRODUCT_TYPE="${NVIDIA_PRODUCT_TYPE:-geforce}"
+
+if [[ ! -f "${ROOT_OS_RELEASE}" ]]; then
+  error "File ${ROOT_OS_RELEASE} not found, /etc/os-release must be mounted into this container."
+  exit ${RETCODE_ERROR}
+fi
+. "${ROOT_OS_RELEASE}"
+
+ROOT_INSTALL_DIR_CURRENT="${ROOT_MOUNT_DIR}/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${VERSION}"
+ROOT_INSTALL_DIR="${ROOT_MOUNT_DIR}/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
+CONTAINER_INSTALL_DIR="/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
 
 _log() {
   local -r prefix="$1"
@@ -41,13 +50,18 @@ load_etc_os_release() {
     exit ${RETCODE_ERROR}
   fi
   . "${ROOT_OS_RELEASE}"
+
+  ROOT_DRIVER_VERSION=${NVIDIA_DRIVER_VERSION}
+  ROOT_DRIVER_COREOS_VERSION=${VERSION}
+  ROOT_INSTALL_DIR_CURRENT="${ROOT_MOUNT_DIR}/opt/nvidia/${ROOT_DRIVER_VERSION}/${ROOT_DRIVER_COREOS_VERSION}"
+
   info "Running on CoreOS ${VERSION}"
 }
 
 check_installation() {
   info "Checking host installation"
 
-  if [[ ! -f "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}" ]]; then
+  if [[ ! -d "${ROOT_INSTALL_DIR}" ]]; then
     info "Driver is not installed on host"
     return ${RETCODE_ERROR}
   fi
@@ -55,32 +69,32 @@ check_installation() {
   info "Driver installed and compatible!"
 }
 
-check_version() {
-  info "Checking installer version"
-
-  if [[ "${VERSION}" != "${NVIDIA_DRIVER_COREOS_VERSION}" ]]; then
-    error "Version missmatch. This installer won't work on this OS."
-    return ${RETCODE_ERROR}
-  fi
-  info "Installer compatible! NVIDIA ${NVIDIA_DRIVER_VERSION} (${NVIDIA_PRODUCT_TYPE}) compiled for CoreOS ${NVIDIA_DRIVER_COREOS_VERSION}"
-}
-
 install_driver() {
   info "Installing Driver on Host"
 
-  mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
-  pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+  mkdir -p "${ROOT_INSTALL_DIR}"
+  pushd "${ROOT_INSTALL_DIR}"
 
-  cp -R ${NVIDIA_INSTALL_DIR_CONTAINER}/* .
+  cp -R ${CONTAINER_INSTALL_DIR}/* .
 
   popd
+}
+
+check_version() {
+  info "Checking installer version"
+
+  if [[ ! -d "${ROOT_INSTALL_DIR_CURRENT}" ]]; then
+    error "No matching driver found on host. Aborting."
+    return ${RETCODE_ERROR}
+  fi
+  info "Driver compatible! NVIDIA ${ROOT_DRIVER_VERSION} (${NVIDIA_PRODUCT_TYPE}) compiled for CoreOS ${ROOT_DRIVER_COREOS_VERSION}"
 }
 
 mount_driver_in_container() {
   info "Mounting Driver in Container"
 
-  mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
-  pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+  mkdir -p "${ROOT_INSTALL_DIR_CURRENT}"
+  pushd "${ROOT_INSTALL_DIR_CURRENT}"
 
   mkdir -p bin-workdir
   mount -t overlay -o lowerdir=/usr/bin,upperdir=bin,workdir=bin-workdir none /usr/bin
@@ -99,8 +113,8 @@ mount_driver_in_container() {
 mount_driver_on_host() {
   info "Mounting Driver on Host"
 
-  mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
-  pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+  mkdir -p "${ROOT_INSTALL_DIR_CURRENT}"
+  pushd "${ROOT_INSTALL_DIR_CURRENT}"
 
   mkdir -p ${ROOT_MOUNT_DIR}/opt/bin
   mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/opt/bin,upperdir=bin,workdir=bin-workdir none ${ROOT_MOUNT_DIR}/opt/bin
@@ -111,26 +125,26 @@ mount_driver_on_host() {
 
 update_container_ld_cache() {
   info "Updating container's ld cache"
-  echo "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64" > /etc/ld.so.conf.d/nvidia.conf
+  echo "${ROOT_INSTALL_DIR_CURRENT}/lib64" > /etc/ld.so.conf.d/nvidia.conf
   ldconfig
 }
 
 load_driver_in_container() {
   info "Loading Driver"
   if ! lsmod | grep -q -w 'nvidia'; then
-    insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia.ko"
+    insmod "${ROOT_INSTALL_DIR_CURRENT}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia.ko"
   fi
   if ! lsmod | grep -q -w 'nvidia_uvm'; then
-    insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-uvm.ko"
+    insmod "${ROOT_INSTALL_DIR_CURRENT}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-uvm.ko"
   fi
   if ! lsmod | grep -q -w 'nvidia_drm'; then
-    insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-drm.ko"
+    insmod "${ROOT_INSTALL_DIR_CURRENT}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-drm.ko"
   fi
 }
 
 verify_nvidia_installation() {
   info "Verifying Nvidia installation"
-  export PATH="${NVIDIA_INSTALL_DIR_CONTAINER}/bin:${PATH}"
+  export PATH="${ROOT_INSTALL_DIR_CURRENT}/bin:${PATH}"
   nvidia-smi
   nvidia-modprobe -c0 -u
 }
@@ -138,9 +152,9 @@ verify_nvidia_installation() {
 main() {
   load_etc_os_release
   if ! check_installation; then
-    check_version
     install_driver
   fi
+  check_version
   mount_driver_in_container
   update_container_ld_cache
   load_driver_in_container
