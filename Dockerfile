@@ -1,7 +1,7 @@
-ARG COREOS_VERSION=1632.2.0
-ARG NVIDIA_DRIVER_VERSION=390.25
-ARG NVIDIA_PRODUCT_TYPE=geforce
-ARG NVIDIA_SITE=us.download.nvidia.com/XFree86/Linux-x86_64
+ARG COREOS_VERSION=1800.5.0
+ARG NVIDIA_DRIVER_VERSION=396.44
+ARG NVIDIA_PRODUCT_TYPE=tesla
+ARG NVIDIA_SITE=us.download.nvidia.com/tesla
 
 FROM bugroger/coreos-developer:${COREOS_VERSION} as BUILD
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
@@ -70,19 +70,22 @@ RUN find /build/kernel -maxdepth 1 -name "*.ko"                 -exec cp {} /opt
 
 # Create a clean transport image containing only the driver
 
-FROM alpine 
+FROM ubuntu 
 LABEL maintainer "Michael Schmidt <michael.j.schmidt@gmail.com>"
 
 ARG COREOS_VERSION
 ARG NVIDIA_DRIVER_VERSION
 ARG NVIDIA_PRODUCT_TYPE
 
-ENV COREOS_VERSION $COREOS_VERSION
-ENV DRIVER_VERSION $NVIDIA_DRIVER_VERSION
+ENV NVIDIA_DRIVER_COREOS_VERSION $COREOS_VERSION
+ENV NVIDIA_DRIVER_VERSION $NVIDIA_DRIVER_VERSION
 ENV NVIDIA_PRODUCT_TYPE $NVIDIA_PRODUCT_TYPE
 
+RUN apt-get update -qq && \
+    apt-get install -y kmod && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=BUILD /opt/nvidia /opt/nvidia
-COPY run.sh /
 COPY install.sh /
 
-ENTRYPOINT ["/run.sh"]
+ENTRYPOINT ["/install.sh"]

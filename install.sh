@@ -1,93 +1,119 @@
-#!/bin/sh
+#!/bin/bash
 
-set -ev
+set -o errexit
+set -o pipefail
+set -u
 
-mkdir -p /opt/nvidia/.work || true
-mkdir -p /opt/bin || true
-rm -rf /opt/nvidia/current || true
-ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/bin/* /opt/bin
-ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION /opt/nvidia/current
-ln -fs /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so.$DRIVER_VERSION /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/lib64/libnvidia-ml.so
-chmod u+s /opt/nvidia/$DRIVER_VERSION/$COREOS_VERSION/bin/nvidia-modprobe
+set -x
+ROOT_OS_RELEASE="${ROOT_OS_RELEASE:-/root/etc/os-release}"
+ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/root}"
+NVIDIA_DRIVER_VERSION="${NVIDIA_DRIVER_VERSION:-396.26}"
+NVIDIA_DRIVER_COREOS_VERSION=${NVIDIA_DRIVER_COREOS_VERSION:-1800.5.0}
+NVIDIA_INSTALL_DIR_HOST="/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
+NVIDIA_INSTALL_DIR_CONTAINER="/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
+NVIDIA_PRODUCT_TYPE="${NVIDIA_PRODUCT_TYPE:-geforce}"
 
-cat <<EOF > /etc/systemd/system/nvidia-update.service
-[Unit]
-After=docker.service
-Requires=docker.service
-Description=NVIDIA Update Driver
+RETCODE_SUCCESS=0
+RETCODE_ERROR=1
+RETRY_COUNT=${RETRY_COUNT:-5}
 
-[Service]
-EnvironmentFile=/etc/os-release
-TimeoutStartSec=0
-Type=oneshot
-RemainAfterExit=yes
-ExecStartPre=/usr/bin/docker pull bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION-$NVIDIA_PRODUCT_TYPE
-ExecStart=/usr/bin/docker run -v /:/rootfs --privileged bugroger/coreos-nvidia-driver:\${VERSION}-$DRIVER_VERSION-$NVIDIA_PRODUCT_TYPE
-ExecStartPost=/usr/bin/systemctl daemon-reload
-ExecStartPost=/usr/bin/systemctl enable nvidia-update
-ExecStartPost=/usr/bin/systemctl enable usr-lib64.mount
-ExecStartPost=/usr/bin/systemctl enable nvidia
-ExecStartPost=/usr/bin/systemctl enable nvidia-persistenced
-[Install]
-WantedBy=multi-user.target
-EOF
+_log() {
+  local -r prefix="$1"
+  shift
+  echo "[${prefix}$(date -u "+%Y-%m-%d %H:%M:%S %Z")] ""$*" >&2
+}
 
-cat <<EOF > /etc/systemd/system/usr-lib64.mount
-[Unit]
-After=nvidia-update.service
-Requires=nvidia-update.service
-ConditionPathExists=/opt/nvidia/.work
-Description=Nvidia Kernel Modules
+info() {
+  _log "INFO    " "$*"
+}
 
-[Mount]
-EnvironmentFile=/etc/os-release
-Type=overlay
-What=overlay
-Where=/usr/lib64
-Options=lowerdir=/usr/lib64,upperdir=/opt/nvidia/$DRIVER_VERSION/\${VERSION}/lib64,workdir=/opt/nvidia/.work
+warn() {
+  _log "WARNING " "$*"
+}
 
-[Install]
-WantedBy=multi-user.target
-EOF
+error() {
+  _log "ERROR   " "$*"
+}
 
-cat <<EOF > /etc/systemd/system/nvidia-persistenced.service
-[Unit]
-After=nvidia.service
-Requires=nvidia.service
-Description=NVIDIA Persistence Daemon
+load_etc_os_release() {
+  if [[ ! -f "${ROOT_OS_RELEASE}" ]]; then
+    error "File ${ROOT_OS_RELEASE} not found, /etc/os-release must be mounted into this container."
+    exit ${RETCODE_ERROR}
+  fi
+  . "${ROOT_OS_RELEASE}"
+  info "Running on CoreOS ${VERSION}"
+}
 
-[Service]
-Type=forking
-ExecStart=/opt/bin/nvidia-persistenced --user nvidia-persistenced --persistence-mode --verbose
-ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
+check_version() {
+  info "Checking installer version"
 
-[Install]
-WantedBy=multi-user.target
-EOF
+  if [[ "${VERSION}" != "${NVIDIA_DRIVER_COREOS_VERSION}" ]]; then
+    error "Version missmatch. This installer won't work on this OS."
+    return ${RETCODE_ERROR}
+  fi
+  info "Installer compatible! NVIDIA ${NVIDIA_DRIVER_VERSION} (${NVIDIA_PRODUCT_TYPE}) compiled for CoreOS ${NVIDIA_DRIVER_COREOS_VERSION}"
+}
 
-cat <<EOF > /etc/systemd/system/nvidia.service
-[Unit]
-After=usr-lib64.mount
-Requires=usr-lib64.mount
-Description=NVIDIA Load
+mount_driver() {
+  info "Mounting Driver"
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/sbin/ldconfig
-ExecStart=/usr/sbin/depmod -a
-ExecStart=/opt/bin/nvidia-modprobe -u -m -c 0
-ExecStart=/opt/bin/nvidia-smi
+  mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+  pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
 
-[Install]
-WantedBy=multi-user.target
-EOF
+  cp -R ${NVIDIA_INSTALL_DIR_CONTAINER}/* .
 
-cat <<EOF > /etc/udev/rules.d/01-nvidia.rules
-SUBSYSTEM=="pci", ATTRS{vendor}=="0x10de", DRIVERS=="nvidia", TAG+="seat", TAG+="master-of-seat"
-EOF
+  mkdir -p bin-workdir
+  mount -t overlay -o lowerdir=/usr/bin,upperdir=bin,workdir=bin-workdir none /usr/bin
 
-udevadm control --reload-rules
-useradd -c "NVIDIA Persistence Daemon" --shell /sbin/nologin --home-dir / nvidia-persistenced || true
+  mkdir -p lib64-workdir
+  mount -t overlay -o lowerdir=/usr/lib/x86_64-linux-gnu,upperdir=lib64,workdir=lib64-workdir none /usr/lib/x86_64-linux-gnu
 
+  mkdir -p drivers-workdir
+  mkdir -p /lib/modules/"$(uname -r)"/video
+  mount -t overlay -o lowerdir=/lib/modules/"$(uname -r)"/video,upperdir=lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia,workdir=drivers-workdir none /lib/modules/"$(uname -r)"/video
+
+  mkdir -p ${ROOT_MOUNT_DIR}/opt/bin
+  mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/opt/bin,upperdir=bin,workdir=bin-workdir none ${ROOT_MOUNT_DIR}/opt/bin
+  mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/usr/lib64,upperdir=lib64,workdir=lib64-workdir none ${ROOT_MOUNT_DIR}/usr/lib64
+
+  trap "{ umount /lib/modules/\"$(uname -r)\"/video ; umount /usr/lib/x86_64-linux-gnu ; umount /usr/bin; }" EXIT
+  popd
+}
+
+update_container_ld_cache() {
+  info "Updating container's ld cache"
+  echo "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64" > /etc/ld.so.conf.d/nvidia.conf
+  ldconfig
+}
+
+loading_driver() {
+  info "Loading Driver"
+  if ! lsmod | grep -q -w 'nvidia'; then
+    insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia.ko"
+  fi
+  if ! lsmod | grep -q -w 'nvidia_uvm'; then
+    insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-uvm.ko"
+  fi
+  if ! lsmod | grep -q -w 'nvidia_drm'; then
+    insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-drm.ko"
+  fi
+}
+
+verify_nvidia_installation() {
+  info "Verifying Nvidia installation"
+  export PATH="${NVIDIA_INSTALL_DIR_CONTAINER}/bin:${PATH}"
+  nvidia-smi
+  nvidia-modprobe -c0 -u
+}
+
+main() {
+  load_etc_os_release
+  check_version
+  mount_driver 
+  update_container_ld_cache
+  loading_driver
+  verify_nvidia_installation
+}
+
+main "$@"
 
