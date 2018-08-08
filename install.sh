@@ -44,6 +44,17 @@ load_etc_os_release() {
   info "Running on CoreOS ${VERSION}"
 }
 
+check_installation() {
+  info "Checking host installation"
+
+  if [[ ! -f "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}" ]]; then
+    info "Driver is not installed on host"
+    return ${RETCODE_ERROR}
+  fi
+
+  info "Driver installed and compatible!"
+}
+
 check_version() {
   info "Checking installer version"
 
@@ -54,13 +65,22 @@ check_version() {
   info "Installer compatible! NVIDIA ${NVIDIA_DRIVER_VERSION} (${NVIDIA_PRODUCT_TYPE}) compiled for CoreOS ${NVIDIA_DRIVER_COREOS_VERSION}"
 }
 
-mount_driver() {
-  info "Mounting Driver"
+install_driver() {
+  info "Installing Driver on Host"
 
   mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
   pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
 
   cp -R ${NVIDIA_INSTALL_DIR_CONTAINER}/* .
+
+  popd
+}
+
+mount_driver_in_container() {
+  info "Mounting Driver in Container"
+
+  mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+  pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
 
   mkdir -p bin-workdir
   mount -t overlay -o lowerdir=/usr/bin,upperdir=bin,workdir=bin-workdir none /usr/bin
@@ -72,11 +92,20 @@ mount_driver() {
   mkdir -p /lib/modules/"$(uname -r)"/video
   mount -t overlay -o lowerdir=/lib/modules/"$(uname -r)"/video,upperdir=lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia,workdir=drivers-workdir none /lib/modules/"$(uname -r)"/video
 
+  trap "{ umount /lib/modules/\"$(uname -r)\"/video ; umount /usr/lib/x86_64-linux-gnu ; umount /usr/bin; }" EXIT
+  popd
+}
+
+mount_driver_on_host() {
+  info "Mounting Driver on Host"
+
+  mkdir -p "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+  pushd "${ROOT_MOUNT_DIR}${NVIDIA_INSTALL_DIR_HOST}"
+
   mkdir -p ${ROOT_MOUNT_DIR}/opt/bin
   mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/opt/bin,upperdir=bin,workdir=bin-workdir none ${ROOT_MOUNT_DIR}/opt/bin
   mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/usr/lib64,upperdir=lib64,workdir=lib64-workdir none ${ROOT_MOUNT_DIR}/usr/lib64
 
-  trap "{ umount /lib/modules/\"$(uname -r)\"/video ; umount /usr/lib/x86_64-linux-gnu ; umount /usr/bin; }" EXIT
   popd
 }
 
@@ -86,7 +115,7 @@ update_container_ld_cache() {
   ldconfig
 }
 
-loading_driver() {
+load_driver_in_container() {
   info "Loading Driver"
   if ! lsmod | grep -q -w 'nvidia'; then
     insmod "${NVIDIA_INSTALL_DIR_CONTAINER}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia.ko"
@@ -108,11 +137,15 @@ verify_nvidia_installation() {
 
 main() {
   load_etc_os_release
-  check_version
-  mount_driver 
+  if ! check_installation; then
+    check_version
+    install_driver
+  fi
+  mount_driver_in_container
   update_container_ld_cache
-  loading_driver
+  load_driver_in_container
   verify_nvidia_installation
+  mount_driver_on_host
 }
 
 main "$@"
