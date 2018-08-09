@@ -146,7 +146,7 @@ verify_nvidia_installation() {
   info "Verifying Nvidia installation"
   export PATH="${ROOT_INSTALL_DIR_CURRENT}/bin:${PATH}"
   nvidia-smi
-  nvidia-modprobe -c0 -u
+  nvidia-modprobe -u -m -c 0
 }
 
 main() {
