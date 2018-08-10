@@ -140,6 +140,9 @@ load_driver_in_container() {
   if ! lsmod | grep -q -w 'nvidia_drm'; then
     insmod "${ROOT_INSTALL_DIR_CURRENT}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-drm.ko"
   fi
+  if ! lsmod | grep -q -w 'nvidia_modeset'; then
+    insmod "${ROOT_INSTALL_DIR_CURRENT}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia-modeset.ko"
+  fi
 }
 
 verify_nvidia_installation() {
