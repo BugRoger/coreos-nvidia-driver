@@ -117,9 +117,14 @@ mount_driver_on_host() {
   pushd "${ROOT_INSTALL_DIR_CURRENT}"
 
   mkdir -p ${ROOT_MOUNT_DIR}/opt/bin
-  mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/opt/bin,upperdir=bin,workdir=bin-workdir none ${ROOT_MOUNT_DIR}/opt/bin
-  mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/usr/lib64,upperdir=lib64,workdir=lib64-workdir none ${ROOT_MOUNT_DIR}/usr/lib64
-
+  
+  if ! findmnt /opt/bin; then 
+    mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/opt/bin,upperdir=bin,workdir=bin-workdir none ${ROOT_MOUNT_DIR}/opt/bin
+  fi
+  if ! findmnt /usr/lib64; then
+    mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/usr/lib64,upperdir=lib64,workdir=lib64-workdir none ${ROOT_MOUNT_DIR}/usr/lib64
+  fi
+  
   popd
 }
 
