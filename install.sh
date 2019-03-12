@@ -22,7 +22,6 @@ if [[ ! -f "${ROOT_OS_RELEASE}" ]]; then
 fi
 . "${ROOT_OS_RELEASE}"
 
-ROOT_INSTALL_DIR_CURRENT="${ROOT_MOUNT_DIR}/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${VERSION}"
 ROOT_INSTALL_DIR="${ROOT_MOUNT_DIR}/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
 CONTAINER_INSTALL_DIR="/opt/nvidia/${NVIDIA_DRIVER_VERSION}/${NVIDIA_DRIVER_COREOS_VERSION}"
 
@@ -66,6 +65,11 @@ check_installation() {
     return ${RETCODE_ERROR}
   fi
 
+  if [[ ! "${ROOT_INSTALL_DIR}" -ef "${ROOT_MOUNT_DIR}/opt/nvidia/current" ]]; then
+      info "Current is not linked"
+      return ${RETCODE_ERROR} 
+  fi
+
   info "Driver installed and compatible!"
 }
 
@@ -76,6 +80,9 @@ install_driver() {
   pushd "${ROOT_INSTALL_DIR}"
 
   cp -R ${CONTAINER_INSTALL_DIR}/* .
+
+  rm -rf ../../current || true
+  ln -fs ./${ROOT_DRIVER_VERSION}/${ROOT_DRIVER_COREOS_VERSION} ../../current
 
   popd
 }
@@ -118,10 +125,10 @@ mount_driver_on_host() {
 
   mkdir -p ${ROOT_MOUNT_DIR}/opt/bin
   
-  if ! findmnt /opt/bin; then 
+  if ! findmnt ${ROOT_MOUNT_DIR}/opt/bin; then 
     mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/opt/bin,upperdir=bin,workdir=bin-workdir none ${ROOT_MOUNT_DIR}/opt/bin
   fi
-  if ! findmnt /usr/lib64; then
+  if ! findmnt ${ROOT_MOUNT_DIR}/usr/lib64; then
     mount -t overlay -o lowerdir=${ROOT_MOUNT_DIR}/usr/lib64,upperdir=lib64,workdir=lib64-workdir none ${ROOT_MOUNT_DIR}/usr/lib64
   fi
   
