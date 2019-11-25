@@ -11,6 +11,9 @@ env:
     - COREOS_TRACK=stable NVIDIA_DRIVER_VERSION=396.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
     - COREOS_TRACK=beta   NVIDIA_DRIVER_VERSION=396.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
     - COREOS_TRACK=alpha  NVIDIA_DRIVER_VERSION=396.44 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
+    - COREOS_TRACK=stable NVIDIA_DRIVER_VERSION=440.33.01 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
+    - COREOS_TRACK=beta   NVIDIA_DRIVER_VERSION=440.33.01 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
+    - COREOS_TRACK=alpha  NVIDIA_DRIVER_VERSION=440.33.01 NVIDIA_PRODUCT_TYPE=tesla NVIDIA_SITE=us.download.nvidia.com/tesla
 
 before_script:
   - curl https://${COREOS_TRACK}.release.core-os.net/amd64-usr/current/version.txt -o version.txt
