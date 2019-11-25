@@ -143,6 +143,10 @@ update_container_ld_cache() {
 
 load_driver_in_container() {
   info "Loading Driver"
+
+  if ! lsmod | grep -q -w 'ipmi_devintf'; then
+    modprobe -d ${ROOT_MOUNT_DIR} ipmi_devintf
+  fi
   if ! lsmod | grep -q -w 'nvidia'; then
     insmod "${ROOT_INSTALL_DIR_CURRENT}/lib64/modules/"$(uname -r)"/kernel/drivers/video/nvidia/nvidia.ko"
   fi
